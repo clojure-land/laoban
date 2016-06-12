@@ -1,17 +1,32 @@
 (ns laoban.core
-  (:require ))
+  (:require [reagent.core :as r] ))
 
 (enable-console-print!)
 
-(println "This text is printed from src/laoban/core.cljs. Go ahead and edit it and see reloading in action.")
 
-;; define your app data so that it doesn't get over-written on reload
+(defonce app-state (r/atom {:columns [{:title "Todos"
+                                       :cards [{:title "Write a Reagent app"}]}]}))
 
-(defonce app-state (atom {:text "Hello world!"}))
+(defn Card [card]
+  [:div {:className "card"} (:title card)])
 
+(defn NewCard []
+  [:div {:className "new-card"} "+ add new card"])
 
-(defn on-js-reload []
-  ;; optionally touch your app-state to force rerendering depending on
-  ;; your application
-  ;; (swap! app-state update-in [:__figwheel_counter] inc)
-)
+(defn Column [col]
+  [:div {:className "column"}
+   [:h2 (:title col)]
+   (for [c (:cards col)]
+     [Card c])
+   [NewCard]])
+
+(defn NewColumn []
+  [:div {:className "new-column"} "+ add new column"])
+
+(defn Board []
+  [:div {:className "board"}
+   (for [c (:columns @app-state)]
+     [Column c])
+   [NewColumn]])
+
+(r/render [Board] (js/document.getElementById "app"))
