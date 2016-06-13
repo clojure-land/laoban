@@ -9,45 +9,50 @@
 (enable-console-print!)
 
 
-(def app-state (r/atom {:columns [{:title "Todos"
-                                   :cards [{:title "Write a Reagent app"}
-                                           {:title "Get more customers"}]}]}))
+(defonce app-state (r/atom {:columns [{:title "Todos"
+                                       :cards [{:title "Write a Reagent app"}
+                                               {:title "Get more customers"}]}]}))
 
-(defn stop-editing [card]
-  (dissoc card :editing))
 
-(defn start-editing [card]
-  (assoc card :editing true))
+(defn stop-editing [c]
+  (dissoc c :editing))
+
+(defn start-editing [c]
+  (assoc c :editing true))
 
 (defn stop-editing-col [col]
   (update col :cards (partial mapv stop-editing)))
 
-
-(defn Card [card]
-  (let [{:keys [editing title]} @card]
+(defn Editable [props type cur]
+  (let [{:keys [editing title]} @cur]
     (if editing
-      [:div {:className "card editing"}
+      [type (update props :className #(str % " editing"))
        [:input {:type "text"
                 :value title
                 :autoFocus true
-                :on-change (fn [e] (swap! card assoc :title (.. e -target -value)))
-                :on-blur #(swap! card stop-editing)}]]
-      [:div {:className "card"
-             :on-click (fn [e]
-                         (swap! card start-editing))} title])))
+                :on-change (fn [e] (swap! cur assoc :title (.. e -target -value)))
+                :on-blur #(swap! cur stop-editing)}]]
+      [type (assoc props
+                   :on-click (fn [e]
+                               (swap! cur start-editing))) title])))
 
-(defn NewCard []
-  [:div {:className "new-card"} "+ add new card"])
+(defn Card [card]
+  [Editable {:className "card"} :div card])
+
+(defn NewCard [col]
+  [:div {:className "new-card"
+         :on-click #(swap! col update :cards conj {:editing true}) } "+ add new card"])
 
 (defn Column [col]
   [:div {:className "column"}
-   [:h2 (:title @col)]
+   [Editable {} :h2 col]
    (for [i (range (count (:cards @col)))]
      [Card (r/cursor col [:cards i])])
-   [NewCard]])
+   [NewCard col]])
 
 (defn NewColumn []
-  [:div {:className "new-column"} "+ add new column"])
+  [:div {:className "new-column"
+         :on-click #(swap! app-state update :columns conj {:cards [] :editing true})} "+ add new column"])
 
 (defn Board []
   [:div {:className "board"}
